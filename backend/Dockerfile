@@ -1,8 +1,9 @@
+
 FROM node:22-slim
 
 WORKDIR /app
 
-# Install programming language runtimes and compilers
+# Install runtimes and compilers for code execution
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     default-jdk \
@@ -12,9 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Node.js dependencies
 COPY package*.json ./
+
 RUN npm ci --omit=dev
 
-# Copy application files
+# Copy backend source code
 COPY . .
 
 ENV NODE_ENV=production
@@ -22,3 +24,4 @@ ENV NODE_ENV=production
 EXPOSE 5000
 
 CMD ["node", "server.js"]
+
