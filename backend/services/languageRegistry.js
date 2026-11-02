@@ -46,15 +46,6 @@ export const LANGUAGE_REGISTRY = Object.freeze({
     runtime: null,
     runtimeArgs: [],
   }),
-  kotlin: Object.freeze({
-    id: "kotlin",
-    name: "Kotlin",
-    extension: ".kt",
-    compiler: "kotlinc",
-    compilerArgs: [],
-    runtime: "java",
-    runtimeArgs: [],
-  }),
 });
 
 const aliases = Object.freeze({
@@ -67,7 +58,6 @@ const aliases = Object.freeze({
   cxx: "cpp",
   "50": "c",
   "54": "cpp",
-  "78": "kotlin",
 });
 
 export const normalizeLanguageId = (languageId) => {
