@@ -237,12 +237,6 @@ export const fetchQuestions = async (data = {}) => {
         Number(data.totalQuestions) || 5,
     };
 
-    console.log(
-      "========== FETCHING FIRST INTERVIEW QUESTION =========="
-    );
-
-    console.log(payload);
-
     const res = await fetch(
       `${BASE_URL}/interview/questions`,
       {
@@ -256,18 +250,6 @@ export const fetchQuestions = async (data = {}) => {
 
     const result =
       await handleResponse(res);
-
-    console.log(
-      "========== FIRST QUESTION RESPONSE =========="
-    );
-
-    console.dir(result, {
-      depth: null,
-    });
-
-    console.log(
-      "=============================================="
-    );
 
     return result;
   } catch (err) {
@@ -321,14 +303,6 @@ export const getNextQuestion = async (
   data = {}
 ) => {
   try {
-    console.log(
-      "========== FETCHING NEXT INTERVIEW QUESTION =========="
-    );
-
-    console.dir(
-      data,
-      { depth: null }
-    );
 
     const res = await fetch(
       `${BASE_URL}/interview/next-question`,
@@ -343,19 +317,6 @@ export const getNextQuestion = async (
 
     const result =
       await handleResponse(res);
-
-    console.log(
-      "========== NEXT QUESTION RESPONSE =========="
-    );
-
-    console.dir(
-      result,
-      { depth: null }
-    );
-
-    console.log(
-      "============================================="
-    );
 
     return result;
 
@@ -401,12 +362,6 @@ export const evaluateInterviewAnswer = async ({
       companyId: companyId ?? null,
     };
 
-    console.log(
-      "========== POST /api/interview/evaluate =========="
-    );
-
-    console.dir(payload, { depth: null });
-
     const res = await fetch(
       `${BASE_URL}/interview/evaluate`,
       {
@@ -419,12 +374,6 @@ export const evaluateInterviewAnswer = async ({
     );
 
     const result = await handleResponse(res);
-
-    console.log(
-      "========== ANSWER EVALUATION RESPONSE =========="
-    );
-
-    console.dir(result, { depth: null });
 
     return result;
   } catch (err) {
@@ -460,12 +409,6 @@ export const evaluateInterview = async ({
       startedAt,
     };
 
-    console.log(
-      "========== POST /api/interview/evaluate-interview =========="
-    );
-
-    console.dir(payload, { depth: null });
-
     const res = await fetch(
       `${BASE_URL}/interview/evaluate-interview`,
       {
@@ -478,12 +421,6 @@ export const evaluateInterview = async ({
     );
 
     const result = await handleResponse(res);
-
-    console.log(
-      "========== FINAL INTERVIEW REPORT =========="
-    );
-
-    console.dir(result, { depth: null });
 
     return result;
   } catch (err) {
@@ -849,28 +786,10 @@ export const getReport = async (
       url += `?sessionId=${encodeURIComponent(sessionId)}`;
     }
 
-    console.log(
-      "========== GETTING INTERVIEW REPORT =========="
-    );
-
-    console.log({
-      candidateId,
-      sessionId,
-      url,
-    });
-
     const res = await fetch(url);
 
     const data =
       await handleResponse(res);
-
-    console.log(
-      "========== INTERVIEW REPORT RESPONSE =========="
-    );
-
-    console.dir(data, {
-      depth: null,
-    });
 
     if (
       !data ||

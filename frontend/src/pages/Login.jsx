@@ -22,9 +22,6 @@ function Login() {
         ? await loginAdmin({ email, password })
         : await loginUser({ email, password });
 
-      // 👉 ADD THIS LINE TO DEBUG YOUR BACKEND RESPONSE FORMAT
-      console.log("Full Login Response Data:", data);
-
       // Handle nested response data safely (in case backend wraps it in data.data)
       const token = data.token || data.data?.token;
       const userRole = data.role || data.data?.role || role;

@@ -191,16 +191,6 @@ export default function MockInterview() {
       totalQuestions: TOTAL_QUESTIONS,
     };
 
-    console.log(
-      "========== STARTING NEW INTERVIEW =========="
-    );
-
-    console.log(interviewInfo);
-
-    console.log(
-      "============================================"
-    );
-
     // -----------------------------------------
     // Clear previous interview state
     // -----------------------------------------

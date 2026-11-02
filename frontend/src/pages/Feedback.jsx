@@ -37,17 +37,6 @@ export default function Feedback() {
       const candidateId = state?.candidateId;
       const sessionId = state?.sessionId;
 
-      console.log(
-        "========== LOADING SAVED INTERVIEW REPORT =========="
-      );
-
-      console.log({
-        candidateId,
-        sessionId,
-        role: state?.role,
-        company: state?.company,
-      });
-
       if (!candidateId) {
         throw new Error("Candidate ID is missing.");
       }
@@ -65,13 +54,6 @@ export default function Feedback() {
         sessionId
       );
 
-      console.log(
-        "========== RAW INTERVIEW REPORT RESPONSE =========="
-      );
-
-      console.dir(data, {
-        depth: null,
-      });
 
       // ==========================================
       // VALIDATE RESPONSE
@@ -113,16 +95,6 @@ export default function Feedback() {
       const backendReport =
         data.report || data;
 
-      console.log(
-        "========== EXTRACTED REPORT =========="
-      );
-
-      console.dir(
-        backendReport,
-        {
-          depth: null,
-        }
-      );
 
       // ==========================================
       // NORMALIZE REPORT
@@ -280,44 +252,10 @@ export default function Feedback() {
           {},
       };
 
-      console.log(
-        "========== NORMALIZED REPORT =========="
-      );
-
-      console.dir(
-        normalizedReport,
-        {
-          depth: null,
-        }
-      );
 
       // ==========================================
       // CHECK THAT DETAILED FEEDBACK EXISTS
       // ==========================================
-
-      console.log(
-        "========== DETAILED FEEDBACK CHECK =========="
-      );
-
-      console.log({
-        summary:
-          normalizedReport.summary,
-
-        strengths:
-          normalizedReport.strengths,
-
-        weaknesses:
-          normalizedReport.weaknesses,
-
-        recommendations:
-          normalizedReport.recommendations,
-
-        finalAssessment:
-          normalizedReport.finalAssessment,
-
-        scores:
-          normalizedReport.scores,
-      });
 
       setReport(normalizedReport);
 

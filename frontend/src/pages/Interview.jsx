@@ -258,10 +258,6 @@ export default function Interview() {
         // GENERATE FIRST QUESTION
         // =================================================
 
-        console.log(
-          "========== FIRST QUESTION =========="
-        );
-
         const data = await fetchQuestions({
           roleId: Number(roleId),
 
@@ -279,7 +275,6 @@ export default function Interview() {
           candidateId,
         });
 
-        console.log("First question:", data);
 
         if (
           !data ||
@@ -295,10 +290,6 @@ export default function Interview() {
 
         const firstQuestion = data.question;
 
-        console.log(
-          "FIRST QUESTION OBJECT:",
-          firstQuestion
-        );
 
         if (
           !firstQuestion.id &&
@@ -558,18 +549,6 @@ export default function Interview() {
     const currentQuestionId =
       getQuestionId(currentQuestion);
 
-    console.log(
-      "========== CURRENT QUESTION =========="
-    );
-
-    console.dir(currentQuestion, {
-      depth: null,
-    });
-
-    console.log(
-      "CURRENT QUESTION ID:",
-      currentQuestionId
-    );
 
     if (!currentQuestionId) {
       throw new Error(
@@ -583,9 +562,6 @@ export default function Interview() {
       );
     }
 
-    console.log(
-      "========== EVALUATING ANSWER =========="
-    );
 
     const evaluationResult =
       await evaluateInterviewAnswer({
@@ -607,14 +583,6 @@ export default function Interview() {
             : null,
       });
 
-    console.log(
-      "========== ANSWER EVALUATION =========="
-    );
-
-    console.dir(
-      evaluationResult,
-      { depth: null }
-    );
 
     if (
       !evaluationResult ||
@@ -782,10 +750,6 @@ export default function Interview() {
       // GET NEXT QUESTION
       // =================================================
 
-      console.log(
-        "========== GETTING NEXT QUESTION =========="
-      );
-
       const nextResult =
         await getNextQuestion({
           candidateId,
@@ -828,14 +792,6 @@ export default function Interview() {
             updatedHistory,
         });
 
-      console.log(
-        "========== NEXT QUESTION RESPONSE =========="
-      );
-
-      console.dir(
-        nextResult,
-        { depth: null }
-      );
 
       if (
         !nextResult ||
@@ -855,10 +811,6 @@ export default function Interview() {
       const nextQuestionId =
         getQuestionId(nextQuestion);
 
-      console.log(
-        "NEXT QUESTION ID:",
-        nextQuestionId
-      );
 
       if (!nextQuestionId) {
         throw new Error(
@@ -909,9 +861,6 @@ export default function Interview() {
 
   const handleSubmit = async () => {
     if (isSubmitting) {
-      console.log(
-        "Submit already in progress. Ignoring duplicate click."
-      );
       return;
     }
 
@@ -919,17 +868,6 @@ export default function Interview() {
       setIsSubmitting(true);
       setErrorMessage("");
 
-      console.log(
-        "\n========================================"
-      );
-
-      console.log(
-        "🔥 FINAL INTERVIEW SUBMISSION STARTED"
-      );
-
-      console.log(
-        "========================================"
-      );
 
       // =================================================
       // CURRENT QUESTION
@@ -1007,9 +945,6 @@ export default function Interview() {
       // FINAL QUESTION EVALUATION
       // =================================================
 
-      console.log(
-        "🔥 STEP 1: Evaluating final question"
-      );
 
       const evaluation =
         await evaluateCurrentAnswer({
@@ -1018,10 +953,6 @@ export default function Interview() {
           candidateId,
         });
 
-      console.log(
-        "🔥 STEP 1 COMPLETE:",
-        evaluation
-      );
 
       if (
         !evaluation ||
@@ -1107,41 +1038,11 @@ export default function Interview() {
           "current_interview_started_at"
         );
 
-      console.log(
-        "🔥 START TIME:",
-        startedAt
-      );
 
       // =================================================
       // FINALIZE INTERVIEW
       // =================================================
 
-      console.log(
-        "\n🔥 STEP 2: CALLING EXPRESS evaluateInterview"
-      );
-
-      console.log({
-        candidateId,
-        sessionId: finalSessionId,
-        roleId:
-          roleId !== null &&
-          roleId !== undefined &&
-          roleId !== ""
-            ? Number(roleId)
-            : null,
-        companyId:
-          companyId !== null &&
-          companyId !== undefined &&
-          companyId !== ""
-            ? Number(companyId)
-            : null,
-        testType: "interview",
-        startedAt,
-      });
-
-      console.log(
-        "🔥 STEP 2: evaluateInterview() FUNCTION ABOUT TO RUN"
-      );
 
       const finalResult =
         await evaluateInterview({
@@ -1171,14 +1072,7 @@ export default function Interview() {
             startedAt || null,
         });
 
-      console.log(
-        "🔥 STEP 2 COMPLETE: evaluateInterview() RETURNED"
-      );
 
-      console.dir(
-        finalResult,
-        { depth: null }
-      );
 
       // =================================================
       // VALIDATE RESPONSE
@@ -1208,27 +1102,6 @@ export default function Interview() {
         );
       }
 
-      console.log(
-        "\n========================================"
-      );
-
-      console.log(
-        "✅ TEST ATTEMPT CONFIRMED"
-      );
-
-      console.log(
-        "Attempt ID:",
-        finalResult.attempt.attempt_id
-      );
-
-      console.log(
-        "Score:",
-        finalResult.attempt.score
-      );
-
-      console.log(
-        "========================================"
-      );
 
       // =================================================
       // NAVIGATE TO FEEDBACK

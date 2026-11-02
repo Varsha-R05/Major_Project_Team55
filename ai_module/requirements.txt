@@ -6,7 +6,8 @@ scikit-learn
 numpy
 networkx
 faster-whisper
-ollama
+requests
+python-dotenv
 langchain-community
 langchain-text-splitters
 langchain-huggingface

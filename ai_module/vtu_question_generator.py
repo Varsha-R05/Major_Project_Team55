@@ -144,7 +144,7 @@ def retrieve_vtu_context(subject, module, topic, k=2):
 
 # =========================================================
 # PROMPT
-# Fixed instructions come FIRST so Ollama can reuse its cached
+# Fixed instructions come FIRST for consistent prompt structure.
 # prompt prefix between questions. Only the part after
 # "--- INPUT ---" changes from question to question.
 # =========================================================

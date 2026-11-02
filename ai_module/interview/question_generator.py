@@ -657,47 +657,129 @@ def parse_question_response(response):
 
     response = response.strip()
 
+    # Remove Markdown code fences
     response = re.sub(
         r"^\s*```(?:json)?\s*",
         "",
         response,
         flags=re.IGNORECASE,
     )
-    response = re.sub(r"\s*```\s*$", "", response)
+    response = re.sub(
+        r"\s*```\s*$",
+        "",
+        response,
+    )
+
+    # Locate the beginning of the JSON object
+    start = response.find("{")
+
+    if start == -1:
+        raise ValueError(
+            f"No JSON object found. Raw response: {response[:500]}"
+        )
+
+    json_text = response[start:].strip()
 
     try:
-        data = json.loads(response)
+        # Try parsing the original response first
+        data = json.loads(json_text)
 
-    except json.JSONDecodeError:
-        start = response.find("{")
-        end = response.rfind("}")
+    except json.JSONDecodeError as original_error:
 
-        if start == -1 or end <= start:
-            raise ValueError(
-                f"No complete JSON object found. "
-                f"Raw response: {response[:500]}"
+        # Count braces, ignoring braces inside quoted strings
+        open_braces = 0
+        close_braces = 0
+        in_string = False
+        escaped = False
+
+        for char in json_text:
+            if escaped:
+                escaped = False
+                continue
+
+            if char == "\\" and in_string:
+                escaped = True
+                continue
+
+            if char == '"':
+                in_string = not in_string
+                continue
+
+            if not in_string:
+                if char == "{":
+                    open_braces += 1
+                elif char == "}":
+                    close_braces += 1
+
+        # Repair only missing closing braces.
+        # Do not attempt to reconstruct an incomplete string.
+        if (
+            not in_string
+            and open_braces > close_braces
+        ):
+            repaired_json = (
+                json_text
+                + ("}" * (open_braces - close_braces))
             )
 
-        data = json.loads(response[start:end + 1])
+            try:
+                data = json.loads(repaired_json)
+
+            except json.JSONDecodeError as repair_error:
+                raise ValueError(
+                    "LLM returned invalid JSON. "
+                    f"Original error: {original_error}. "
+                    f"Repair error: {repair_error}. "
+                    f"Raw response: {response[:500]}"
+                ) from repair_error
+
+        else:
+            # Try extracting the first complete JSON object
+            decoder = json.JSONDecoder()
+
+            try:
+                data, _ = decoder.raw_decode(
+                    response[start:]
+                )
+
+            except json.JSONDecodeError as extraction_error:
+                raise ValueError(
+                    "Could not parse LLM JSON response. "
+                    f"Error: {extraction_error}. "
+                    f"Raw response: {response[:500]}"
+                ) from extraction_error
 
     if not isinstance(data, dict):
-        raise ValueError("LLM response must be a JSON object")
+        raise ValueError(
+            "LLM response must be a JSON object"
+        )
 
-    question = str(data.get("question", "")).strip()
-    expected_answer = str(data.get("expected_answer", "")).strip()
+    question = str(
+        data.get("question", "")
+    ).strip()
+
+    expected_answer = str(
+        data.get("expected_answer", "")
+    ).strip()
 
     if not question:
-        raise ValueError("Generated question is empty")
+        raise ValueError(
+            "Generated question is empty"
+        )
 
     if not expected_answer:
-        raise ValueError("Generated expected answer is empty")
+        raise ValueError(
+            "Generated expected answer is empty"
+        )
 
+    # Remove numbering from the question
     question = re.sub(
         r"^\s*\d+[\.\)\-:]\s*",
         "",
         question,
     ).strip()
 
+    # Remove common prefixes
     prefixes = [
         "Here is your question:",
         "Here is the interview question:",
@@ -708,24 +790,33 @@ def parse_question_response(response):
     for prefix in prefixes:
         if question.lower().startswith(prefix.lower()):
             question = question[len(prefix):].strip()
+            break
 
+    # Normalize whitespace
     question = " ".join(question.split())
-    expected_answer = " ".join(expected_answer.split())
+    expected_answer = " ".join(
+        expected_answer.split()
+    )
 
     return question, expected_answer
-
 
 # =========================================================
 # LLM CALL
 # =========================================================
 def call_llm(prompt, temperature):
-    return ask_llama(
+    response = ask_llama(
         prompt,
         max_tokens=NUM_PREDICT,
         temperature=temperature,
         response_format="json",
     )
 
+    if not response:
+        raise RuntimeError(
+            "Cloudflare Llama returned an empty response"
+        )
+
+    return response
 
 
 # =========================================================
@@ -747,7 +838,8 @@ def build_prompt(
     focus,
 ):
     rejected_text = "\n".join(
-        f"- {question}" for question in rejected_questions
+        f"- {question}"
+        for question in rejected_questions
     ) or "None"
 
     difficulty_text = DIFFICULTY_GUIDE.get(
@@ -758,8 +850,8 @@ def build_prompt(
     hr_mode = is_hr_topic(topic)
 
     interview_style = (
-        "an HR interviewer assessing communication, motivation, teamwork, "
-        "adaptability, and professional behavior"
+        "an HR interviewer assessing communication, motivation, "
+        "teamwork, adaptability, and professional behavior"
         if hr_mode
         else "a technical interviewer assessing role-specific skills"
     )
@@ -769,50 +861,60 @@ def build_prompt(
 - Use a realistic sample response in simple, professional language.
 - For behavioral questions, use a concise example with action and outcome.
 - For introductory questions, provide a short sample introduction.
-- Do not require technical details unless they are relevant to the question.
-- Do not include placeholders such as [insert example] or [your experience].
-- Keep the answer around 20 to 50 words, at most three sentences.
+- Do not require technical details unless relevant.
+- Do not use placeholders.
+- Keep the answer around 20 to 50 words.
+- Use at most three sentences.
 """
     else:
         answer_instructions = """
 - Be technically accurate and use simple professional language.
-- Keep the answer between 20 and 35 words, at most two sentences.
+- Keep the answer between 20 and 35 words.
+- Use at most two sentences.
 - Do not include code.
-- Do not include placeholders such as [insert example] or [your experience].
+- Do not use placeholders.
 """
 
     return f"""
-You are an expert interviewer acting as {interview_style} for entry-level candidates.
+You are an expert interviewer acting as {interview_style}
+for entry-level candidates.
 
 Generate exactly ONE interview question and ONE expected answer.
 
-DETAILS:
-Role: "{role}"
-Company: "{company}"
-Topic: "{topic}"
-Question Type: "{question_type}"
-Category: "{category}"
+INTERVIEW DETAILS:
+Role: {role}
+Company: {company}
+Topic: {topic}
+Question Type: {question_type}
+Category: {category}
 
-FOCUS CONCEPT (mandatory):
-The question MUST be directly about: {focus}
-Ignore any reference material that is unrelated to this concept.
+MANDATORY FOCUS:
+The question must directly test this concept:
+{focus}
 
-DIFFICULTY ({difficulty}):
+DIFFICULTY:
+{difficulty}
+
+DIFFICULTY GUIDANCE:
 {difficulty_text}
 
-RULES:
-- Ask exactly ONE clear, entry-level question about the focus concept.
-- For HR or behavioral topics, assess professional behavior, communication,
-  teamwork, motivation, adaptability, or problem-solving through a realistic
-  interview question.
-- For technical topics, test a practical skill for the role "{role}".
-- It must differ from every question in the lists below.
-- Do not ask about requirements engineering, SDLC, or project management.
-- For "HR Interview", introductory questions such as "Tell me about yourself"
-  are allowed.
-- For "Behavioral Questions", focus on a specific past experience or situation.
+QUESTION RULES:
+- Ask exactly ONE clear interview question.
+- The question must be suitable for an entry-level candidate.
+- The question must directly relate to the mandatory focus.
+- For technical topics, test a practical skill relevant to {role}.
+- For HR topics, assess professional behavior, communication,
+  teamwork, motivation, adaptability, or problem-solving.
+- For behavioral questions, ask about a specific past experience.
+- Do not repeat or paraphrase any previous or rejected question.
+- Do not ask about requirements engineering, SDLC,
+  or project management unless directly required by the focus.
+- For HR Interview, introductory questions are allowed.
 
-REFERENCE MATERIAL (use only if relevant to the focus concept):
+REFERENCE MATERIAL:
+Use this material only when relevant to the mandatory focus.
+Ignore unrelated reference material.
+
 {context}
 
 COMPANY STYLE:
@@ -821,26 +923,31 @@ COMPANY STYLE:
 RECENT PERFORMANCE:
 {performance}
 
-ALREADY ASKED (do not repeat or paraphrase):
+PREVIOUSLY ASKED QUESTIONS:
 {previous_questions_text}
 
-REJECTED (do not repeat or paraphrase):
+REJECTED QUESTIONS:
 {rejected_text}
 
-EXPECTED ANSWER:
+EXPECTED ANSWER INSTRUCTIONS:
 {answer_instructions}
 
-OUTPUT RULES:
-- Return only valid JSON, no Markdown, no code fences, no commentary.
-- No literal line breaks inside JSON string values.
+STRICT OUTPUT REQUIREMENTS:
+- Return exactly one JSON object.
+- Use exactly two keys: "question" and "expected_answer".
+- Both values must be strings.
+- Do not include Markdown or code fences.
+- Do not include commentary before or after the JSON.
+- Do not include literal line breaks inside JSON string values.
+- Do not add any other keys.
+- Ensure the JSON object is complete.
+- Ensure all quotes are properly escaped.
+- Ensure the object ends with a closing brace.
 
-OUTPUT FORMAT:
-{{
-    "question": "One interview question about the focus concept",
-    "expected_answer": "A concise and appropriate sample answer."
-}}
+Return this structure with the actual question and answer:
+
+{{"question":"Your interview question","expected_answer":"Your expected answer"}}
 """
-
 
 # =========================================================
 # COMPANY PROFILE LOOKUP
