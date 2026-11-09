@@ -43,7 +43,7 @@ function App() {
       <Route path="/test/:type" element={<DashboardLayout><Test /></DashboardLayout>} />
       <Route path="/test/:type/:company" element={<DashboardLayout><Test /></DashboardLayout>} />
       <Route path="/coding" element={<DashboardLayout><CodingTest /></DashboardLayout>} />
-      <Route path="/interview" element={<DashboardLayout><Interview /></DashboardLayout>} />
+      <Route path="/interview" element={<Interview />} />
       <Route path="/feedback" element={<DashboardLayout><Feedback /></DashboardLayout>} />
       <Route path="/test/vtu" element={<Test />} />
 
