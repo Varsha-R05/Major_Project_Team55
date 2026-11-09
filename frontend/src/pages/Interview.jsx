@@ -1443,7 +1443,7 @@ export default function Interview() {
             }
             className="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            Evaluate & Next ➔
+            Next Question ➔
           </button>
 
         )}
