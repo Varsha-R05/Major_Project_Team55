@@ -1198,7 +1198,7 @@ export default function Interview() {
         </h2>
 
         <p className="text-gray-500 mt-2">
-          Please wait while the AI processes your response.
+         Please wait while your response is being evaluated.
         </p>
 
       </div>

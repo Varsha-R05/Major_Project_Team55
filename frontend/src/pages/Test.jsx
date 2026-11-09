@@ -279,7 +279,7 @@ export default function Test() {
           Analyzing your responses...
         </h2>
         <p className="text-gray-500 mt-2">
-          Our AI is grading your VTU test. Please don't close this page.
+          Your VTU test is being evaluated. Please don't close this page.
         </p>
       </div>
     );

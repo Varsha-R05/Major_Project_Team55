@@ -5,15 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import traceback
 from vtu_question_generator import generate_vtu_question
-from resume.semantic_matcher import calculate_rag_semantic_match
-from resume.resume_parser import parse_resume
-from resume.ats_analyzer import analyze_ats
-from resume.skill_extractor import compare_skills
-from resume.experience_analyzer import analyze_experience
-from resume.project_analyzer import analyze_projects
-from resume.achievement_analyzer import analyze_achievements
-from resume.feedback_generator import generate_feedback
+from resume.resume_analyzer import analyze_resume_with_llama
 from resume.job_description_generator import generate_job_description
+from resume.resume_parser import parse_resume
 
 from interview.question_generator import generate_question
 from interview.interview_feedback import generate_interview_report
@@ -419,132 +413,145 @@ def analyze(
 # =========================================================
 # RESUME ANALYSIS
 # =========================================================
-
 @app.post("/analyze-resume")
-async def analyze_resume(
-    req: ResumeRequest
-):
+async def analyze_resume(req: ResumeRequest):
 
     try:
-
-        text = (
-            req.text or ""
-        ).strip()
-
-        role = (
-            req.role or ""
-        ).strip()
-
-        jd = (
-            req.job_description or ""
-        ).strip()
+        # Validate resume text
+        text = (req.text or "").strip()
 
         if not text:
-
-            return {
-
-                "overall_score": 0,
-
-                "error":
-                    "Resume text is empty."
-
-            }
-
-        parsed_resume = parse_resume(
-            text
-        )
-
-        ats_result = analyze_ats(
-            parsed_resume
-        )
-
-        skill_result = compare_skills(
-            text,
-            jd if jd else role
-        )
-
-        experience_result = analyze_experience(
-            text
-        )
-
-        project_result = analyze_projects(
-            text
-        )
-
-        achievement_result = analyze_achievements(
-            text
-        )
-
-        semantic_score = (
-            calculate_rag_semantic_match(
-                text,
-                role,
-                jd
+            raise HTTPException(
+                status_code=400,
+                detail="Resume text is empty."
             )
+
+        # Validate target role
+        role = (req.role or "General").strip()
+
+        # Validate job description
+        jd = (req.job_description or "").strip()
+
+        if not jd:
+            raise HTTPException(
+                status_code=400,
+                detail="Job description is required."
+            )
+
+        logging.info("Starting resume ATS analysis")
+        logging.info("Target role: %s", role)
+        logging.info("Resume length: %s characters", len(text))
+
+        # Run Llama ATS analysis
+        analysis = analyze_resume_with_llama(
+            resume_text=text,
+            job_description=jd,
+            target_role=role
         )
 
-        report = generate_feedback(
+        # Validate analysis response
+        if not isinstance(analysis, dict):
+            raise ValueError("Invalid resume analysis response")
 
-            semantic_score,
+        # Normalize arrays to lists of strings
+        def normalize_list(value):
+            if not isinstance(value, list):
+                return []
 
-            ats_result,
+            normalized = []
 
-            skill_result,
+            for item in value:
+                if isinstance(item, str) and item.strip():
+                    normalized.append(item.strip())
 
-            experience_result,
+                elif isinstance(item, dict):
+                    text_value = (
+                        item.get("skill")
+                        or item.get("keyword")
+                        or item.get("text")
+                        or item.get("name")
+                        or ""
+                    )
 
-            project_result,
+                    if isinstance(text_value, str) and text_value.strip():
+                        normalized.append(text_value.strip())
 
-            achievement_result
+            return normalized
 
-        )
+        # Normalize ATS score
+        try:
+            score = int(float(analysis.get("ats_score", 0)))
+            score = max(0, min(100, score))
+        except (TypeError, ValueError):
+            score = 0
 
-        return {
+        # Build complete ATS response
+        result = {
+            "success": True,
 
-            "role":
-                role,
+            "ats_score": score,
 
-            "evaluation_mode":
-                "AI Resume Analyzer v2",
+            "matching_skills": normalize_list(
+                analysis.get("matching_skills")
+            ),
 
-            "report":
-                report,
+            "missing_skills": normalize_list(
+                analysis.get("missing_skills")
+            ),
 
-            "ats_analysis":
-                ats_result,
+            "missing_keywords": normalize_list(
+                analysis.get("missing_keywords")
+            ),
 
-            "skill_analysis":
-                skill_result,
+            "strengths": normalize_list(
+                analysis.get("strengths")
+            ),
 
-            "experience_analysis":
-                experience_result,
+            "weaknesses": normalize_list(
+                analysis.get("weaknesses")
+            ),
 
-            "project_analysis":
-                project_result,
-
-            "achievement_analysis":
-                achievement_result
-
+            "recommendations": normalize_list(
+                analysis.get("recommendations")
+            )
         }
 
+        # Debug logs
+        logging.info("ATS analysis completed")
+        logging.info(
+            "Matching skills: %s",
+            result["matching_skills"]
+        )
+        logging.info(
+            "Missing skills: %s",
+            result["missing_skills"]
+        )
+        logging.info(
+            "Missing keywords: %s",
+            result["missing_keywords"]
+        )
 
-    except Exception as e:
+        logging.info(
+            "Final ATS response: %s",
+            result
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+
+    except Exception:
 
         logging.error(
+            "Llama resume analysis failed:\n%s",
             traceback.format_exc()
         )
 
-        return {
-
-            "overall_score": 0,
-
-            "error":
-                str(e),
-
-            "message":
-                "Resume analysis failed."
-
-        }
+        raise HTTPException(
+            status_code=500,
+            detail="Resume analysis failed."
+        )
 
 @app.post("/generate-vtu-question")
 def generate_vtu_exam_question(req: VTUQuestionRequest):
