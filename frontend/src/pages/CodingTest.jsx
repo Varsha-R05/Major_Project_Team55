@@ -679,9 +679,6 @@ const handleConfirmEndTest = async () => {
                 {results.passedTests !== undefined && results.totalTests !== undefined && (
                   <p className="text-gray-300 mb-2">Passed: {results.passedTests} / {results.totalTests}</p>
                 )}
-                {results.attemptId && (
-                  <p className="text-gray-500 mb-2">Attempt ID: {results.attemptId}</p>
-                )}
                 {results.results?.map((r, i) => (
                   <div key={i} className="border-t border-gray-800 pt-2 mt-2">
                     <p className={r.passed ? "text-green-500" : "text-red-500"}>

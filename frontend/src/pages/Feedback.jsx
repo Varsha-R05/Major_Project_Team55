@@ -73,24 +73,6 @@ export default function Feedback() {
         );
       }
 
-      // ==========================================
-      // IMPORTANT:
-      // BACKEND RETURNS:
-      //
-      // {
-      //   success: true,
-      //   candidateId: 5,
-      //   sessionId: "...",
-      //   report: {
-      //      overall_score: 76.2,
-      //      summary: "...",
-      //      strengths: [],
-      //      ...
-      //   }
-      // }
-      //
-      // THEREFORE USE data.report
-      // ==========================================
 
       const backendReport =
         data.report || data;
